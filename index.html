@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Peindre — Motion Graphic Presentation</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans & Prompt for Thai -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- GSAP Animation Library (Local + CDN fallback) -->
+  <script src="./assets/gsap.min.js"></script>
+  <script>
+    if (typeof gsap === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"><\/script>');
+    }
+  </script>
+
+  <style>
+    :root {
+      --bg-base: #0f0d15;
+      --bg-surface: rgba(26, 23, 38, 0.75);
+      --bg-glass: rgba(255, 255, 255, 0.08);
+      --border-glass: rgba(255, 255, 255, 0.14);
+      --accent-lavender: #b589f8;
+      --accent-pink: #f472b6;
+      --accent-blue: #60a5fa;
+      --accent-gold: #fcd34d;
+      --accent-mint: #34d399;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --shadow-cinema: 0 35px 80px -20px rgba(0, 0, 0, 0.7), 0 0 50px -10px rgba(181, 137, 248, 0.25);
+      --stage-w: 1024px;
+      --stage-h: 537px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 20px 16px;
+      position: relative;
+    }
+
+    /* Ambient Background Canvas */
+    #ambient-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Radial Ambient Glow behind stage */
+    .ambient-glow {
+      position: fixed;
+      width: 900px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(181, 137, 248, 0.22) 0%, rgba(244, 114, 182, 0.12) 40%, transparent 70%);
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 1;
+      transition: background 1.2s ease, transform 1.2s ease;
+    }
+
+    /* Top Navigation / Brand Header */
+    .top-header {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 1024px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding: 0 4px;
+    }
+
+    .brand-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo-disc {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #fce7f3, #e0e7ff);
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 4px 14px rgba(244, 114, 182, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .brand-logo-disc img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .brand-info h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #ffffff, #fbcfe8, #c4b5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-info p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pill-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glass);
+      color: var(--text-main);
+      padding: 7px 14px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      backdrop-filter: blur(16px);
+      transition: all 0.25s ease;
+    }
+
+    .pill-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .pill-btn.active {
+      background: linear-gradient(135deg, rgba(181, 137, 248, 0.3), rgba(244, 114, 182, 0.3));
+      border-color: var(--accent-lavender);
+      color: #fff;
+    }
+
+    /* Main Cinematic Motion Stage */
+    .stage-wrapper {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 1024px;
+      perspective: 1400px;
+    }
+
+    .cinema-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1024 / 537;
+      background: #000;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: var(--shadow-cinema);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      transform-style: preserve-3d;
+      transition: transform 0.15s ease-out;
+    }
+
+    /* Individual Slide / Scene Containers */
+    .scene {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform-origin: center center;
+      overflow: hidden;
+    }
+
+    .scene.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    /* Base Slide Image */
+    .scene-img-holder {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      transform-origin: center center;
+    }
+
+    .scene-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transform: scale(1.01);
+    }
+
+    /* Shimmer Sheen Sweep */
+    .sheen-layer {
+      position: absolute;
+      inset: -50%;
+      background: linear-gradient(
+        115deg,
+        transparent 35%,
+        rgba(255, 255, 255, 0.12) 48%,
+        rgba(255, 255, 255, 0.28) 50%,
+        rgba(255, 255, 255, 0.12) 52%,
+        transparent 65%
+      );
+      pointer-events: none;
+      transform: translateX(-100%);
+      mix-blend-mode: overlay;
+    }
+
+    /* Cinematic Vignette */
+    .scene-vignette {
+      position: absolute;
+      inset: 0;
+      box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.35);
+      pointer-events: none;
+      border-radius: 20px;
+    }
+
+    /* Motion Graphic Overlays & Callouts */
+    .motion-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Floating Badges & Kinetic Callouts */
+    .callout {
+      position: absolute;
+      padding: 9px 16px;
+      border-radius: 14px;
+      backdrop-filter: blur(14px);
+      background: rgba(18, 16, 28, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45), 0 0 20px rgba(181, 137, 248, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      transform: translateY(20px) scale(0.9);
+      pointer-events: auto;
+      cursor: default;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    }
+
+    .callout:hover {
+      transform: translateY(-2px) scale(1.04) !important;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6), 0 0 28px rgba(244, 114, 182, 0.5);
+    }
+
+    .callout .dot-pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-mint);
+      box-shadow: 0 0 10px var(--accent-mint);
+      animation: pulseDot 1.8s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.75); }
+    }
+
+    /* Dynamic Focus Rings on slide elements */
+    .focus-ring {
+      position: absolute;
+      border: 2px dashed rgba(244, 114, 182, 0.8);
+      border-radius: 16px;
+      box-shadow: 0 0 25px rgba(244, 114, 182, 0.4), inset 0 0 20px rgba(244, 114, 182, 0.2);
+      opacity: 0;
+      transform: scale(0.94);
+      pointer-events: none;
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Animated Cursor Simulation */
+    .virtual-cursor {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      pointer-events: none;
+      z-index: 20;
+      opacity: 0;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+    }
+
+    .virtual-cursor svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .cursor-click-ring {
+      position: absolute;
+      top: -12px;
+      left: -12px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid var(--accent-lavender);
+      opacity: 0;
+      transform: scale(0.2);
+    }
+
+    /* Scene Narrative Banner (Subtitles / Motion Typography) */
+    .narrative-card {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      right: 24px;
+      background: linear-gradient(135deg, rgba(20, 17, 32, 0.92), rgba(30, 24, 48, 0.85));
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(20px);
+      padding: 14px 22px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      z-index: 10;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    .narrative-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .narrative-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent-lavender);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .narrative-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .narrative-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .narrative-pill {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Interactive Timeline & Bottom Controls */
+    .controls-panel {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 1024px;
+      margin-top: 16px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glass);
+      backdrop-filter: blur(20px);
+      border-radius: 18px;
+      padding: 12px 20px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Timeline Scrubber Bar */
+    .timeline-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .timeline-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-lavender), var(--accent-pink), var(--accent-gold));
+      border-radius: 9999px;
+      position: relative;
+      box-shadow: 0 0 12px var(--accent-lavender);
+    }
+
+    /* Scene Thumbnails / Step Tabs */
+    .scene-tabs {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .scene-tab {
+      flex: 1;
+      min-width: 140px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 8px 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scene-tab:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .scene-tab.active {
+      background: linear-gradient(135deg, rgba(181, 137, 248, 0.25), rgba(244, 114, 182, 0.2));
+      border-color: var(--accent-lavender);
+      box-shadow: 0 4px 16px rgba(181, 137, 248, 0.25);
+    }
+
+    .scene-tab-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .scene-tab.active .scene-tab-num {
+      background: linear-gradient(135deg, var(--accent-lavender), var(--accent-pink));
+      color: #fff;
+    }
+
+    .scene-tab-meta {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .scene-tab-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .scene-tab-sub {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .scene-tab-progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 2.5px;
+      width: 0%;
+      background: var(--accent-lavender);
+      transition: width 0.1s linear;
+    }
+
+    /* Control Buttons Row */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding-top: 4px;
+    }
+
+    .playback-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ctrl-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .ctrl-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.28);
+      transform: scale(1.05);
+    }
+
+    .ctrl-btn:active {
+      transform: scale(0.96);
+    }
+
+    .ctrl-btn.btn-play-pause {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent-lavender), var(--accent-pink));
+      border: none;
+      box-shadow: 0 4px 18px rgba(244, 114, 182, 0.45);
+    }
+
+    .ctrl-btn.btn-play-pause:hover {
+      box-shadow: 0 6px 24px rgba(244, 114, 182, 0.65);
+      transform: scale(1.08);
+    }
+
+    .time-indicator {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-left: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .utility-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .speed-select {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .speed-select option {
+      background: #1a1726;
+      color: #fff;
+    }
+
+    /* Sound Visualizer Bars inside sound button */
+    .sound-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 14px;
+    }
+
+    .sound-bar {
+      width: 2.5px;
+      height: 4px;
+      background: #fff;
+      border-radius: 2px;
+      transition: height 0.2s ease;
+    }
+
+    .sound-active .sound-bar:nth-child(1) { animation: soundWave 0.8s infinite ease-in-out; }
+    .sound-active .sound-bar:nth-child(2) { animation: soundWave 0.6s infinite ease-in-out 0.2s; }
+    .sound-active .sound-bar:nth-child(3) { animation: soundWave 0.9s infinite ease-in-out 0.4s; }
+
+    @keyframes soundWave {
+      0%, 100% { height: 4px; }
+      50% { height: 14px; }
+    }
+
+    /* Keyboard Hints Bar */
+    .keyboard-hint {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 12px;
+      font-size: 0.73rem;
+      color: var(--text-muted);
+    }
+
+    .kbd-chip {
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      padding: 2px 7px;
+      font-family: monospace;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Interactive Sparkle Particles Container */
+    .sparkle-burst {
+      position: absolute;
+      pointer-events: none;
+      z-index: 30;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .top-header { flex-direction: column; gap: 10px; align-items: flex-start; }
+      .header-actions { width: 100%; justify-content: space-between; }
+      .narrative-card { padding: 10px 14px; bottom: 12px; left: 12px; right: 12px; }
+      .narrative-title { font-size: 0.9rem; }
+      .narrative-desc { display: none; }
+      .scene-tab { min-width: 110px; padding: 6px; }
+      .scene-tab-sub { display: none; }
+      .keyboard-hint { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Ambient Glow & Particles -->
+  <div class="ambient-glow" id="ambientGlow"></div>
+  <canvas id="ambient-canvas"></canvas>
+
+  <!-- Header -->
+  <header class="top-header">
+    <div class="brand-badge">
+      <div class="brand-logo-disc">
+        <!-- Peindre shrimp logo from slide -->
+        <svg viewBox="0 0 100 100" width="30" height="30" fill="none">
+          <circle cx="50" cy="50" r="46" fill="#fdf2f4" stroke="#c084fc" stroke-width="3"/>
+          <path d="M35 55 C35 35, 65 35, 65 55 C65 65, 55 72, 45 70 C38 68, 35 62, 35 55 Z" fill="#fda4af"/>
+          <circle cx="42" cy="48" r="4" fill="#4c1d95"/>
+          <path d="M40 38 Q45 28 58 32 Q62 40 50 40 Z" fill="#7c3aed"/>
+          <path d="M60 48 Q75 42 78 50" stroke="#fb7185" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-info">
+        <h1>Peindre <span style="font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 9999px; background: rgba(181, 137, 248, 0.2); border: 1px solid var(--accent-lavender); -webkit-text-fill-color: var(--accent-lavender);">Motion Presentation</span></h1>
+        <p>Interactive Motion Graphic for Artists & Creators</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="pill-btn active" id="btnModeCinematic">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>
+        <span>Cinematic Auto</span>
+      </button>
+      <button class="pill-btn" id="btnToggleSound">
+        <div class="sound-bars" id="soundBars">
+          <div class="sound-bar"></div>
+          <div class="sound-bar"></div>
+          <div class="sound-bar"></div>
+        </div>
+        <span id="soundLabel">Sound FX: OFF</span>
+      </button>
+      <button class="pill-btn" id="btnFullscreen" title="Fullscreen (F)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        <span>Fullscreen</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Cinema Stage Area -->
+  <main class="stage-wrapper">
+    <div class="cinema-stage" id="cinemaStage">
+      
+      <!-- Virtual Cursor for simulated interaction -->
+      <div class="virtual-cursor" id="virtualCursor">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M3 3L10.5 21L14.2 13.8L21.4 10.1L3 3Z" fill="#ffffff" stroke="#9333ea" stroke-width="1.8"/>
+        </svg>
+        <div class="cursor-click-ring"></div>
+      </div>
+
+      <!-- ================= SCENE 1: Welcome Tea Party ================= -->
+      <div class="scene active" id="scene-1" data-title="ยินดีต้อนรับสู่ Peindre" data-subtitle="พื้นที่สร้างสรรค์และคอมมูนิตี้สำหรับศิลปินทุกคน" data-color="#b589f8">
+        <div class="scene-img-holder">
+          <img class="scene-img" src="./assets/slide1_welcome.jpg" alt="Welcome to Peindre">
+          <div class="sheen-layer"></div>
+        </div>
+        <div class="scene-vignette"></div>
+
+        <!-- Animated Motion Graphics Callouts -->
+        <div class="motion-layer">
+          <div class="callout" style="top: 14%; left: 8%;" id="s1-callout-1">
+            <span class="dot-pulse"></span>
+            <span>✨ Welcome to Peindre Website</span>
+          </div>
+
+          <div class="callout" style="top: 22%; right: 12%;" id="s1-callout-2">
+            <span>🍰 Royal High Tea & Art Community</span>
+          </div>
+
+          <div class="callout" style="bottom: 22%; left: 24%; border-color: var(--accent-pink);" id="s1-callout-3">
+            <span>🎨 Peindre คืออะไร ?</span>
+          </div>
+          
+          <div class="focus-ring" id="s1-focus-1" style="top: 8%; left: 8%; width: 320px; height: 340px;"></div>
+          <div class="focus-ring" id="s1-focus-2" style="top: 8%; right: 6%; width: 340px; height: 350px;"></div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 2: Courses & Tools ================= -->
+      <div class="scene" id="scene-2" data-title="คอร์สเรียน & เครื่องมือวาดรูป" data-subtitle="สอนตั้งแต่พื้นฐานจนวาดเป็น พร้อมบรัช Procreate คุณภาพสูง" data-color="#7c3aed">
+        <div class="scene-img-holder">
+          <img class="scene-img" src="./assets/slide2_courses.png" alt="Drawing Courses & Procreate Brushes">
+          <div class="sheen-layer"></div>
+        </div>
+        <div class="scene-vignette"></div>
+
+        <!-- Overlays -->
+        <div class="motion-layer">
+          <div class="callout" style="top: 14%; left: 16%;" id="s2-callout-1">
+            <span>🔍 ค้นหาคอร์สและบรัชได้อย่างง่ายดาย</span>
+          </div>
+
+          <div class="callout" style="bottom: 26%; left: 10%; border-color: #818cf8;" id="s2-callout-2">
+            <span class="dot-pulse" style="background:#818cf8; box-shadow:0 0 10px #818cf8;"></span>
+            <span>🎓 คอร์สยอดนิยม: อ. NongRen (มังงะ 2D)</span>
+          </div>
+
+          <div class="callout" style="bottom: 24%; right: 8%; border-color: var(--accent-pink);" id="s2-callout-3">
+            <span>🖌️ Brush Procreate By Nemoya_san</span>
+          </div>
+
+          <div class="focus-ring" id="s2-focus-course" style="top: 36%; left: 6%; width: 57%; height: 54%;"></div>
+          <div class="focus-ring" id="s2-focus-brush" style="top: 36%; right: 6%; width: 28%; height: 54%;"></div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 3: Commission Search ================= -->
+      <div class="scene" id="scene-3" data-title="ค้นหานักวาดคมมิชชัน" data-subtitle="เลือกดูโปรไฟล์นักวาด เช็คคิว และดูเรตติ้งความพึงพอใจ 5.0" data-color="#f472b6">
+        <div class="scene-img-holder">
+          <img class="scene-img" src="./assets/slide3_commission_list.png" alt="Commission Artist Directory">
+          <div class="sheen-layer"></div>
+        </div>
+        <div class="scene-vignette"></div>
+
+        <div class="motion-layer">
+          <div class="callout" style="top: 12%; right: 18%;" id="s3-callout-search">
+            <span class="dot-pulse" style="background:#f472b6; box-shadow:0 0 10px #f472b6;"></span>
+            <span>#commission open #waitlist</span>
+          </div>
+
+          <div class="callout" style="top: 38%; right: 12%; border-color: var(--accent-lavender);" id="s3-callout-hata">
+            <span>⭐ Artist : hata* (Commercial & Personal)</span>
+          </div>
+
+          <div class="callout" style="bottom: 18%; right: 12%; border-color: var(--accent-gold);" id="s3-callout-star">
+            <span>⭐ Artist : Star_sen (คะแนน 5.0 เต็ม)</span>
+          </div>
+
+          <div class="focus-ring" id="s3-focus-search" style="top: 12%; left: 13%; width: 44%; height: 14%;"></div>
+          <div class="focus-ring" id="s3-focus-card1" style="top: 26%; left: 13%; width: 75%; height: 32%;"></div>
+          <div class="focus-ring" id="s3-focus-card2" style="top: 62%; left: 13%; width: 75%; height: 32%;"></div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 4: Commission Card Menu ================= -->
+      <div class="scene" id="scene-4" data-title="เมนูคมมิชชัน & ระบบสั่งจ้าง" data-subtitle="Headshot, Chibi, Bust Up พร้อมรองรับ Thai QR Payment และ KBank" data-color="#10b981">
+        <div class="scene-img-holder">
+          <img class="scene-img" src="./assets/slide4_artist_card.png" alt="Artist Commission Card & Pricing">
+          <div class="sheen-layer"></div>
+        </div>
+        <div class="scene-vignette"></div>
+
+        <div class="motion-layer">
+          <div class="callout" style="top: 18%; right: 14%; border-color: var(--accent-mint);" id="s4-callout-open">
+            <span class="dot-pulse" style="background:var(--accent-mint);"></span>
+            <span>🟢 NOW OPEN พร้อมรับงาน!</span>
+          </div>
+
+          <div class="callout" style="bottom: 18%; left: 12%; border-color: var(--accent-blue);" id="s4-callout-pay">
+            <span>💳 รองรับ Thai QR Payment & KBank</span>
+          </div>
+
+          <div class="callout" style="bottom: 18%; right: 12%; border-color: var(--accent-pink);" id="s4-callout-req">
+            <span>📩 กด Request เพื่อส่งบรีฟได้ทันที</span>
+          </div>
+
+          <!-- Highlight boxes over the 3 styles -->
+          <div class="focus-ring" id="s4-focus-headshot" style="top: 27%; left: 11%; width: 22%; height: 44%;"></div>
+          <div class="focus-ring" id="s4-focus-chibi" style="top: 27%; left: 34%; width: 22%; height: 44%;"></div>
+          <div class="focus-ring" id="s4-focus-bustup" style="top: 27%; left: 57%; width: 22%; height: 44%;"></div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 5: Art Showcase Gallery ================= -->
+      <div class="scene" id="scene-5" data-title="แกลเลอรีผลงานศิลปิน" data-subtitle="จัดแสดงผลงานระดับพรีเมียมจากครีเอเตอร์หลากหลายสไตล์" data-color="#38bdf8">
+        <div class="scene-img-holder">
+          <img class="scene-img" src="./assets/slide5_showcase.png" alt="Art Showcase Gallery">
+          <div class="sheen-layer"></div>
+        </div>
+        <div class="scene-vignette"></div>
+
+        <div class="motion-layer">
+          <div class="callout" style="top: 12%; left: 14%; border-color: #a78bfa;" id="s5-callout-1">
+            <span>💜 Cr. Suncandymoon & Star_sen</span>
+          </div>
+
+          <div class="callout" style="top: 12%; right: 12%; border-color: #38bdf8;" id="s5-callout-2">
+            <span>🍋 Cr. PangBB (Pop & Fantasy Style)</span>
+          </div>
+
+          <div class="callout" style="bottom: 16%; right: 16%; border-color: #f472b6;" id="s5-callout-3">
+            <span>🍰 Cr. RIRI (Cute Chibi Dessert)</span>
+          </div>
+
+          <div class="focus-ring" id="s5-focus-art1" style="top: 6%; left: 15%; width: 17%; height: 44%;"></div>
+          <div class="focus-ring" id="s5-focus-art2" style="top: 11%; left: 32%; width: 29%; height: 38%;"></div>
+          <div class="focus-ring" id="s5-focus-art3" style="top: 3%; right: 16%; width: 20%; height: 48%;"></div>
+        </div>
+      </div>
+
+      <!-- Narrative Overlay Banner at bottom of cinema stage -->
+      <div class="narrative-card" id="narrativeCard">
+        <div class="narrative-content">
+          <div class="narrative-tag" id="narrativeTag">
+            <span>✦ SCENE 01</span>
+            <span>•</span>
+            <span id="narrativeSceneName">INTRODUCTION</span>
+          </div>
+          <div class="narrative-title" id="narrativeTitle">
+            ยินดีต้อนรับสู่ Peindre
+          </div>
+          <div class="narrative-desc" id="narrativeDesc">
+            พื้นที่สร้างสรรค์และคอมมูนิตี้สำหรับศิลปินทุกคน
+          </div>
+        </div>
+        <div class="narrative-pill" id="narrativePill">
+          <span>🎨 Peindre Platform</span>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Interactive Controls & Timeline Panel -->
+  <footer class="controls-panel">
+    
+    <!-- Timeline Bar -->
+    <div class="timeline-container" id="timelineBar" title="คลิกเพื่อข้ามเวลา">
+      <div class="timeline-fill" id="timelineFill"></div>
+    </div>
+
+    <!-- Scene Tabs Navigation -->
+    <div class="scene-tabs" id="sceneTabs">
+      <div class="scene-tab active" data-index="0">
+        <div class="scene-tab-num">1</div>
+        <div class="scene-tab-meta">
+          <div class="scene-tab-title">01. Welcome</div>
+          <div class="scene-tab-sub">ยินดีต้อนรับสู่ Peindre</div>
+        </div>
+        <div class="scene-tab-progress"></div>
+      </div>
+
+      <div class="scene-tab" data-index="1">
+        <div class="scene-tab-num">2</div>
+        <div class="scene-tab-meta">
+          <div class="scene-tab-title">02. Courses & Brushes</div>
+          <div class="scene-tab-sub">คอร์สเรียนและบรัช</div>
+        </div>
+        <div class="scene-tab-progress"></div>
+      </div>
+
+      <div class="scene-tab" data-index="2">
+        <div class="scene-tab-num">3</div>
+        <div class="scene-tab-meta">
+          <div class="scene-tab-title">03. Artists</div>
+          <div class="scene-tab-sub">ค้นหานักวาดคมมิชชัน</div>
+        </div>
+        <div class="scene-tab-progress"></div>
+      </div>
+
+      <div class="scene-tab" data-index="3">
+        <div class="scene-tab-num">4</div>
+        <div class="scene-tab-meta">
+          <div class="scene-tab-title">04. Commission Menu</div>
+          <div class="scene-tab-sub">เมนูราคา & ขอจ้างวาด</div>
+        </div>
+        <div class="scene-tab-progress"></div>
+      </div>
+
+      <div class="scene-tab" data-index="4">
+        <div class="scene-tab-num">5</div>
+        <div class="scene-tab-meta">
+          <div class="scene-tab-title">05. Art Gallery</div>
+          <div class="scene-tab-sub">แกลเลอรีผลงานศิลปิน</div>
+        </div>
+        <div class="scene-tab-progress"></div>
+      </div>
+    </div>
+
+    <!-- Playback Control Row -->
+    <div class="controls-row">
+      <div class="playback-group">
+        <button class="ctrl-btn" id="btnPrev" title="ก่อนหน้า (ลูกศรซ้าย)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+        </button>
+
+        <button class="ctrl-btn btn-play-pause" id="btnPlayPause" title="เล่น / หยุดชั่วคราว (Spacebar)">
+          <svg id="iconPlay" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+          <svg id="iconPause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+        </button>
+
+        <button class="ctrl-btn" id="btnNext" title="ถัดไป (ลูกศรขวา)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+        </button>
+
+        <button class="ctrl-btn" id="btnRestart" title="เริ่มใหม่ตั้งแต่ต้น">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+
+        <span class="time-indicator" id="timeIndicator">01 / 05</span>
+      </div>
+
+      <div class="utility-group">
+        <label for="speedSelect" style="font-size:0.75rem; color:var(--text-muted);">ความเร็ว:</label>
+        <select class="speed-select" id="speedSelect">
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1.0x (ปกติ)</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+        </select>
+      </div>
+    </div>
+
+  </footer>
+
+  <!-- Keyboard Shortcuts Hint -->
+  <div class="keyboard-hint">
+    <span><span class="kbd-chip">Space</span> เล่น / พัก</span>
+    <span><span class="kbd-chip">←</span> / <span class="kbd-chip">→</span> เลื่อนฉาก</span>
+    <span><span class="kbd-chip">F</span> เต็มจอ</span>
+    <span><span class="kbd-chip">M</span> ปิด/เปิดเสียง</span>
+  </div>
+
+  <!-- JavaScript Animation Controller -->
+  <script>
+    /* =========================================================
+       AUDIO SYNTHESIZER ENGINE (Web Audio API)
+       Generates smooth cinematic chimes, whooshes, and clicks
+       ========================================================= */
+    class AudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playWhoosh() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(420, this.ctx.currentTime + 0.25);
+        osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.5);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(600, this.ctx.currentTime);
+
+        gain.gain.setValueAtTime(0.01, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.18, this.ctx.currentTime + 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.5);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.55);
+      }
+
+      playChime(pitch = 880) {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(pitch, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(pitch * 1.5, this.ctx.currentTime + 0.3);
+
+        gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.6);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.65);
+      }
+
+      playClick() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.08);
+
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.09);
+      }
+    }
+
+    const audio = new AudioEngine();
+
+    /* =========================================================
+       CANVAS PARTICLE ENGINE (Floating Sparkles & Dreamy Petals)
+       ========================================================= */
+    const canvas = document.getElementById('ambient-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    const PARTICLE_COUNT = 45;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 3.5 + 1.2;
+        this.speedX = (Math.random() - 0.5) * 0.45;
+        this.speedY = -Math.random() * 0.6 - 0.2;
+        this.opacity = Math.random() * 0.6 + 0.2;
+        this.fadeSpeed = (Math.random() * 0.008 + 0.003) * (Math.random() > 0.5 ? 1 : -1);
+        this.isStar = Math.random() > 0.55;
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotSpeed = (Math.random() - 0.5) * 0.02;
+        this.color = ['#f472b6', '#c084fc', '#93c5fd', '#fef08a'][Math.floor(Math.random() * 4)];
+      }
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.rotation += this.rotSpeed;
+        this.opacity += this.fadeSpeed;
+        if (this.opacity > 0.85 || this.opacity < 0.15) {
+          this.fadeSpeed = -this.fadeSpeed;
+        }
+        if (this.y < -20 || this.x < -20 || this.x > canvas.width + 20) {
+          this.reset();
+          this.y = canvas.height + 10;
+        }
+      }
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        ctx.globalAlpha = Math.max(0, Math.min(1, this.opacity));
+        ctx.fillStyle = this.color;
+
+        if (this.isStar) {
+          // 4-pointed star
+          ctx.beginPath();
+          const r = this.size * 2.2;
+          ctx.moveTo(0, -r);
+          ctx.quadraticCurveTo(0, 0, r, 0);
+          ctx.quadraticCurveTo(0, 0, 0, r);
+          ctx.quadraticCurveTo(0, 0, -r, 0);
+          ctx.quadraticCurveTo(0, 0, 0, -r);
+          ctx.fill();
+        } else {
+          // Soft petal / orb
+          ctx.beginPath();
+          ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push(new Particle());
+    }
+
+    function renderParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let p of particles) {
+        p.update();
+        p.draw();
+      }
+      requestAnimationFrame(renderParticles);
+    }
+    renderParticles();
+
+
+    /* =========================================================
+       MOTION GRAPHIC CONTROLLER (GSAP State Machine)
+       ========================================================= */
+    const TOTAL_SCENES = 5;
+    const SCENE_DURATION = 6.2; // seconds per scene in auto mode
+    let currentScene = 0;
+    let isPlaying = true;
+    let playbackSpeed = 1.0;
+    let masterTimeline = null;
+    let sceneTimer = null;
+    let sceneProgress = 0;
+
+    const scenes = document.querySelectorAll('.scene');
+    const tabs = document.querySelectorAll('.scene-tab');
+    const ambientGlow = document.getElementById('ambientGlow');
+    const cinemaStage = document.getElementById('cinemaStage');
+    const virtualCursor = document.getElementById('virtualCursor');
+    const timelineFill = document.getElementById('timelineFill');
+    const timeIndicator = document.getElementById('timeIndicator');
+
+    // Narrative Elements
+    const narrativeCard = document.getElementById('narrativeCard');
+    const narrativeTag = document.getElementById('narrativeTag');
+    const narrativeTitle = document.getElementById('narrativeTitle');
+    const narrativeDesc = document.getElementById('narrativeDesc');
+    const narrativeSceneName = document.getElementById('narrativeSceneName');
+
+    /* 3D Gyroscope / Mouse Parallax Effect on Stage */
+    cinemaStage.addEventListener('mousemove', (e) => {
+      const rect = cinemaStage.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      gsap.to(cinemaStage, {
+        rotateY: x * 6,
+        rotateX: -y * 6,
+        duration: 0.4,
+        ease: 'power1.out',
+        transformPerspective: 1200
+      });
+    });
+
+    cinemaStage.addEventListener('mouseleave', () => {
+      gsap.to(cinemaStage, {
+        rotateY: 0,
+        rotateX: 0,
+        duration: 0.8,
+        ease: 'power2.out'
+      });
+    });
+
+    /* Build individual Scene Timelines with GSAP */
+    function playScene(index, instant = false) {
+      if (masterTimeline) {
+        masterTimeline.kill();
+      }
+
+      currentScene = index;
+      updateUIState(index);
+      audio.playWhoosh();
+
+      const activeSceneEl = scenes[index];
+      const color = activeSceneEl.dataset.color || '#b589f8';
+      
+      // Update ambient aura color
+      ambientGlow.style.background = `radial-gradient(circle, ${color}33 0%, ${color}15 45%, transparent 70%)`;
+
+      // Deactivate all scenes except target
+      scenes.forEach((sc, i) => {
+        if (i !== index) {
+          gsap.to(sc, {
+            opacity: 0,
+            scale: 0.96,
+            duration: 0.5,
+            ease: 'power2.in',
+            onComplete: () => {
+              sc.classList.remove('active');
+            }
+          });
+        }
+      });
+
+      activeSceneEl.classList.add('active');
+      gsap.fromTo(activeSceneEl, 
+        { opacity: 0, scale: 1.04 },
+        { opacity: 1, scale: 1.0, duration: 0.7, ease: 'power2.out' }
+      );
+
+      // Create new GSAP Timeline for this scene
+      masterTimeline = gsap.timeline({
+        onComplete: () => {
+          if (isPlaying) {
+            nextScene();
+          }
+        }
+      });
+      masterTimeline.timeScale(playbackSpeed);
+
+      const imgHolder = activeSceneEl.querySelector('.scene-img-holder');
+      const sheen = activeSceneEl.querySelector('.sheen-layer');
+
+      // 1. Ken-Burns camera pan/zoom
+      gsap.fromTo(imgHolder, 
+        { scale: 1.0, x: 0, y: 0 },
+        { scale: 1.07, x: (index % 2 === 0 ? -12 : 12), y: -6, duration: SCENE_DURATION, ease: 'sine.inOut' }
+      );
+
+      // 2. Light Sheen Sweep across slide
+      if (sheen) {
+        masterTimeline.fromTo(sheen, 
+          { x: '-120%' }, 
+          { x: '120%', duration: 1.4, ease: 'power2.inOut' }, 
+          0.2
+        );
+      }
+
+      // 3. Narrative Card Entrance
+      narrativeTitle.textContent = activeSceneEl.dataset.title;
+      narrativeDesc.textContent = activeSceneEl.dataset.subtitle;
+      narrativeSceneName.textContent = `SCENE 0${index + 1}`;
+      document.querySelector('#narrativeTag span:first-child').textContent = `✦ SCENE 0${index + 1}`;
+
+      masterTimeline.fromTo(narrativeCard, 
+        { y: 35, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.6, ease: 'back.out(1.4)' },
+        0.3
+      );
+
+      // 4. Scene-Specific Motion Graphics Choreography
+      switch(index) {
+        case 0:
+          choreographScene1(masterTimeline);
+          break;
+        case 1:
+          choreographScene2(masterTimeline);
+          break;
+        case 2:
+          choreographScene3(masterTimeline);
+          break;
+        case 3:
+          choreographScene4(masterTimeline);
+          break;
+        case 4:
+          choreographScene5(masterTimeline);
+          break;
+      }
+
+      // 5. Track progress bar
+      trackTimelineProgress();
+    }
+
+    /* Scene 1: Welcome */
+    function choreographScene1(tl) {
+      const c1 = document.getElementById('s1-callout-1');
+      const c2 = document.getElementById('s1-callout-2');
+      const c3 = document.getElementById('s1-callout-3');
+      const f1 = document.getElementById('s1-focus-1');
+      const f2 = document.getElementById('s1-focus-2');
+
+      tl.fromTo(c1, { y: 25, opacity: 0, scale: 0.8 }, { y: 0, opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.7)' }, 0.5)
+        .add(() => audio.playChime(660), 0.5)
+        .fromTo(f1, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'power2.out' }, 0.7)
+        .fromTo(c2, { y: 25, opacity: 0, scale: 0.8 }, { y: 0, opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.7)' }, 1.3)
+        .add(() => audio.playChime(880), 1.3)
+        .fromTo(f2, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'power2.out' }, 1.5)
+        .fromTo(c3, { y: 20, opacity: 0, scale: 0.85 }, { y: 0, opacity: 1, scale: 1, duration: 0.7, ease: 'elastic.out(1, 0.6)' }, 2.4)
+        .add(() => audio.playChime(1100), 2.4);
+    }
+
+    /* Scene 2: Courses & Brushes */
+    function choreographScene2(tl) {
+      const c1 = document.getElementById('s2-callout-1');
+      const c2 = document.getElementById('s2-callout-2');
+      const c3 = document.getElementById('s2-callout-3');
+      const fCourse = document.getElementById('s2-focus-course');
+      const fBrush = document.getElementById('s2-focus-brush');
+
+      // Simulate Cursor Moving to Course Card
+      tl.fromTo(virtualCursor, 
+        { opacity: 0, x: 200, y: 100 },
+        { opacity: 1, x: 340, y: 320, duration: 0.9, ease: 'power2.out' },
+        0.4
+      )
+      .add(() => {
+        // Trigger click wave
+        const ring = virtualCursor.querySelector('.cursor-click-ring');
+        gsap.fromTo(ring, { scale: 0.2, opacity: 1 }, { scale: 2.2, opacity: 0, duration: 0.5 });
+        audio.playClick();
+      }, 1.3)
+      .fromTo(fCourse, { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.5)' }, 1.3)
+      .fromTo(c2, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'back.out(1.6)' }, 1.4)
+      .to(virtualCursor, { x: 780, y: 320, duration: 0.9, ease: 'power2.inOut' }, 2.3)
+      .add(() => {
+        const ring = virtualCursor.querySelector('.cursor-click-ring');
+        gsap.fromTo(ring, { scale: 0.2, opacity: 1 }, { scale: 2.2, opacity: 0, duration: 0.5 });
+        audio.playClick();
+      }, 3.2)
+      .fromTo(fBrush, { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.5)' }, 3.2)
+      .fromTo(c3, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'back.out(1.6)' }, 3.3)
+      .to(virtualCursor, { opacity: 0, duration: 0.3 }, 4.2);
+    }
+
+    /* Scene 3: Commission Search */
+    function choreographScene3(tl) {
+      const cSearch = document.getElementById('s3-callout-search');
+      const cHata = document.getElementById('s3-callout-hata');
+      const cStar = document.getElementById('s3-callout-star');
+      const fSearch = document.getElementById('s3-focus-search');
+      const fCard1 = document.getElementById('s3-focus-card1');
+      const fCard2 = document.getElementById('s3-focus-card2');
+
+      tl.fromTo(fSearch, { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.5 }, 0.4)
+        .fromTo(cSearch, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'back.out(1.7)' }, 0.6)
+        .add(() => audio.playChime(750), 0.6)
+        .fromTo(fCard1, { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.6, ease: 'power2.out' }, 1.4)
+        .fromTo(cHata, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'back.out(1.6)' }, 1.6)
+        .fromTo(fCard2, { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.6, ease: 'power2.out' }, 2.6)
+        .fromTo(cStar, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'back.out(1.6)' }, 2.8)
+        .add(() => audio.playChime(950), 2.8);
+    }
+
+    /* Scene 4: Commission Card Menu */
+    function choreographScene4(tl) {
+      const cOpen = document.getElementById('s4-callout-open');
+      const cPay = document.getElementById('s4-callout-pay');
+      const cReq = document.getElementById('s4-callout-req');
+      const fHead = document.getElementById('s4-focus-headshot');
+      const fChibi = document.getElementById('s4-focus-chibi');
+      const fBust = document.getElementById('s4-focus-bustup');
+
+      tl.fromTo(cOpen, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'back.out(2)' }, 0.4)
+        .add(() => audio.playChime(800), 0.4)
+        .fromTo(fHead, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(1.5)' }, 1.0)
+        .fromTo(fChibi, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(1.5)' }, 1.4)
+        .fromTo(fBust, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(1.5)' }, 1.8)
+        .fromTo(cPay, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out' }, 2.4)
+        .fromTo(cReq, { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: 'elastic.out(1, 0.5)' }, 3.1)
+        .add(() => audio.playChime(1200), 3.1);
+    }
+
+    /* Scene 5: Art Showcase Gallery */
+    function choreographScene5(tl) {
+      const c1 = document.getElementById('s5-callout-1');
+      const c2 = document.getElementById('s5-callout-2');
+      const c3 = document.getElementById('s5-callout-3');
+      const fArt1 = document.getElementById('s5-focus-art1');
+      const fArt2 = document.getElementById('s5-focus-art2');
+      const fArt3 = document.getElementById('s5-focus-art3');
+
+      tl.fromTo(fArt1, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.5 }, 0.5)
+        .fromTo(c1, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'back.out(1.6)' }, 0.7)
+        .add(() => audio.playChime(700), 0.7)
+        .fromTo(fArt2, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.5 }, 1.5)
+        .fromTo(c2, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'back.out(1.6)' }, 1.7)
+        .add(() => audio.playChime(900), 1.7)
+        .fromTo(fArt3, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.5 }, 2.5)
+        .fromTo(c3, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'back.out(1.6)' }, 2.7)
+        .add(() => audio.playChime(1150), 2.7);
+    }
+
+    /* Track timeline bar and scene tab progress */
+    function trackTimelineProgress() {
+      if (sceneTimer) clearInterval(sceneTimer);
+
+      const startTime = Date.now();
+      const durationMs = (SCENE_DURATION / playbackSpeed) * 1000;
+
+      sceneTimer = setInterval(() => {
+        if (!isPlaying) return;
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(1, elapsed / durationMs);
+
+        // Update overall timeline bar
+        const totalProgress = ((currentScene + progress) / TOTAL_SCENES) * 100;
+        timelineFill.style.width = `${totalProgress}%`;
+
+        // Update current tab mini-progress
+        tabs.forEach((tab, i) => {
+          const tabProg = tab.querySelector('.scene-tab-progress');
+          if (i < currentScene) {
+            tabProg.style.width = '100%';
+          } else if (i === currentScene) {
+            tabProg.style.width = `${progress * 100}%`;
+          } else {
+            tabProg.style.width = '0%';
+          }
+        });
+
+        if (progress >= 1) {
+          clearInterval(sceneTimer);
+        }
+      }, 50);
+    }
+
+    function updateUIState(index) {
+      tabs.forEach((tab, i) => {
+        tab.classList.toggle('active', i === index);
+      });
+      timeIndicator.textContent = `0${index + 1} / 0${TOTAL_SCENES}`;
+    }
+
+    function nextScene() {
+      const nextIdx = (currentScene + 1) % TOTAL_SCENES;
+      playScene(nextIdx);
+    }
+
+    function prevScene() {
+      const prevIdx = (currentScene - 1 + TOTAL_SCENES) % TOTAL_SCENES;
+      playScene(prevIdx);
+    }
+
+    function togglePlayPause() {
+      isPlaying = !isPlaying;
+      const iconPlay = document.getElementById('iconPlay');
+      const iconPause = document.getElementById('iconPause');
+
+      if (isPlaying) {
+        iconPlay.style.display = 'none';
+        iconPause.style.display = 'block';
+        if (masterTimeline) masterTimeline.resume();
+      } else {
+        iconPlay.style.display = 'block';
+        iconPause.style.display = 'none';
+        if (masterTimeline) masterTimeline.pause();
+      }
+      audio.playClick();
+    }
+
+    /* =========================================================
+       USER INTERACTION & EVENT LISTENERS
+       ========================================================= */
+
+    // Tab clicks
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const idx = parseInt(tab.dataset.index, 10);
+        playScene(idx);
+      });
+    });
+
+    // Control buttons
+    document.getElementById('btnPlayPause').addEventListener('click', togglePlayPause);
+    document.getElementById('btnNext').addEventListener('click', nextScene);
+    document.getElementById('btnPrev').addEventListener('click', prevScene);
+    document.getElementById('btnRestart').addEventListener('click', () => playScene(0));
+
+    // Timeline bar click scrubbing
+    document.getElementById('timelineBar').addEventListener('click', (e) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickRatio = (e.clientX - rect.left) / rect.width;
+      const targetScene = Math.floor(clickRatio * TOTAL_SCENES);
+      playScene(Math.min(TOTAL_SCENES - 1, Math.max(0, targetScene)));
+    });
+
+    // Speed selector
+    document.getElementById('speedSelect').addEventListener('change', (e) => {
+      playbackSpeed = parseFloat(e.target.value);
+      if (masterTimeline) {
+        masterTimeline.timeScale(playbackSpeed);
+      }
+    });
+
+    // Sound FX Toggle
+    const btnToggleSound = document.getElementById('btnToggleSound');
+    const soundBars = document.getElementById('soundBars');
+    const soundLabel = document.getElementById('soundLabel');
+
+    btnToggleSound.addEventListener('click', () => {
+      audio.init();
+      audio.muted = !audio.muted;
+      if (!audio.muted) {
+        btnToggleSound.classList.add('active');
+        soundBars.classList.add('sound-active');
+        soundLabel.textContent = 'Sound FX: ON';
+        audio.playChime(1000);
+      } else {
+        btnToggleSound.classList.remove('active');
+        soundBars.classList.remove('sound-active');
+        soundLabel.textContent = 'Sound FX: OFF';
+      }
+    });
+
+    // Fullscreen Toggle
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    btnFullscreen.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => console.log(err));
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    });
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlayPause();
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        nextScene();
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        prevScene();
+      } else if (e.key.toLowerCase() === 'f') {
+        btnFullscreen.click();
+      } else if (e.key.toLowerCase() === 'm') {
+        btnToggleSound.click();
+      }
+    });
+
+    // Start presentation on load
+    window.addEventListener('DOMContentLoaded', () => {
+      playScene(0);
+    });
+  </script>
+</body>
+</html>
